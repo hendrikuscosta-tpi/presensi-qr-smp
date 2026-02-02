@@ -155,29 +155,28 @@ def isi_presensi_manual(presensi_id):
     """, (kelas,))
     siswa = cur.fetchall()
 
-    # SIMPAN PRESENSI MANUAL
+    # =====================
+    # SIMPAN (POST)
+    # =====================
     if request.method == 'POST':
-    cur.execute(
-        "DELETE FROM detail_presensi WHERE presensi_id = ?",
-        (presensi_id,)
-    )
+        for s in siswa:
+            siswa_id = s[0]
+            status = request.form.get(f'status_{siswa_id}')
 
-    for s in siswa:
-        siswa_id = s[0]
-        status = request.form.get(f'status_{siswa_id}')
+            if status:
+                cur.execute("""
+                    INSERT INTO detail_presensi
+                    (presensi_id, siswa_id, status, metode, waktu)
+                    VALUES (?, ?, ?, 'manual', datetime('now'))
+                """, (presensi_id, siswa_id, status))
 
-        if status:
-            cur.execute("""
-                INSERT INTO detail_presensi
-                (presensi_id, siswa_id, status, metode, waktu)
-                VALUES (?, ?, ?, 'manual', datetime('now'))
-            """, (presensi_id, siswa_id, status))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('presensi'))  # ← HANYA DI POST
 
-    conn.commit()
-    conn.close()
-    return redirect(url_for('presensi'))
-
-
+    # =====================
+    # TAMPILKAN FORM (GET)
+    # =====================
     conn.close()
     return render_template(
         'isi_presensi.html',
@@ -187,8 +186,6 @@ def isi_presensi_manual(presensi_id):
         mapel=mapel,
         kelas=kelas
     )
-
-
 
 # ------------------------
 # RUN APP (HARUS PALING BAWAH)
