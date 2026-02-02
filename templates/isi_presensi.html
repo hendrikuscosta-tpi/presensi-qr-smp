@@ -1,0 +1,32 @@
+<h2>Isi Presensi</h2>
+
+<p>
+Tanggal: {{ tanggal }} <br>
+Mapel: {{ mapel }} <br>
+Kelas: {{ kelas }}
+</p>
+
+<form method="post">
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Nama Siswa</th>
+        <th>Hadir</th>
+        <th>Izin</th>
+        <th>Sakit</th>
+        <th>Alpa</th>
+    </tr>
+
+    {% for s in siswa %}
+    <tr>
+        <td>{{ s[1] }}</td>
+        <td><input type="radio" name="status_{{ s[0] }}" value="Hadir" required></td>
+        <td><input type="radio" name="status_{{ s[0] }}" value="Izin"></td>
+        <td><input type="radio" name="status_{{ s[0] }}" value="Sakit"></td>
+        <td><input type="radio" name="status_{{ s[0] }}" value="Alpa"></td>
+    </tr>
+    {% endfor %}
+</table>
+
+<br>
+<button type="submit">Simpan Presensi</button>
+</form>

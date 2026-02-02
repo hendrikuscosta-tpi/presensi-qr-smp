@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Daftar Presensi</title>
+</head>
+<body>
+    <h2>Daftar Sesi Presensi</h2>
+
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>Tanggal</th>
+            <th>Mapel</th>
+            <th>Kelas</th>
+            <th>Aksi</th>
+        </tr>
+        {% for p in presensi %}
+        <tr>
+            <td>{{ p[1] }}</td>
+            <td>{{ p[2] }}</td>
+            <td>{{ p[3] }}</td>
+            <td>
+                <a href="/presensi/{{ p[0] }}">Isi Presensi</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <br>
+    <a href="/">Kembali ke Menu</a>
+</body>
+</html>

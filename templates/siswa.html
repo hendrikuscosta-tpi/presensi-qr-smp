@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Siswa</title>
+</head>
+<body>
+    <h2>Input Data Siswa</h2>
+
+    <form method="POST">
+        <label>Nama Siswa</label><br>
+        <input type="text" name="nama" required><br><br>
+
+        <label>Kelas</label><br>
+        <select name="kelas" required>
+            <option value="7A">7A</option>
+            <option value="7B">7B</option>
+            <option value="9A">9A</option>
+            <option value="9B">9B</option>
+        </select><br><br>
+
+        <button type="submit">Simpan</button>
+    </form>
+
+    <hr>
+
+    <h2>Daftar Siswa</h2>
+
+    <table border="1" cellpadding="5">
+    <tr>
+        <th>No</th>
+        <th>Nama</th>
+        <th>Kelas</th>
+        <th>QR Code</th>
+    </tr>
+    {% for s in siswa %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ s[1] }}</td>
+        <td>{{ s[2] }}</td>
+        <td>
+    {% if s[3] %}
+        <a href="/static/qrcode/{{ s[1]|lower|replace(' ', '_') }}_{{ s[0] }}.png" target="_blank">
+            Lihat QR
+        </a>
+        |
+        <a href="/generate_qr/{{ s[0] }}">
+            Generate Ulang
+        </a>
+    {% else %}
+        <a href="/generate_qr/{{ s[0] }}">
+            Generate QR
+        </a>
+    {% endif %}
+    </td>
+    </tr>
+    {% endfor %}
+</table>
+
+    <br>
+    <a href="/">Kembali ke Menu</a>
+</body>
+</html>

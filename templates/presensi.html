@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sesi Presensi</title>
+</head>
+<body>
+
+<h2>Buat Sesi Presensi</h2>
+
+<form method="post">
+    <label>Tanggal:</label><br>
+    <input type="date" name="tanggal" required><br><br>
+
+    <label>Mata Pelajaran:</label><br>
+    <select name="mapel" required>
+        <option>Seni Budaya</option>
+        <option>Informatika</option>
+        <option>Koding & KA</option>
+    </select><br><br>
+
+    <label>Kelas:</label><br>
+    <select name="kelas" required>
+        <option>7A</option>
+        <option>7B</option>
+        <option>9A</option>
+        <option>9B</option>
+    </select><br><br>
+
+    <button type="submit">Mulai Presensi</button>
+</form>
+
+<hr>
+
+<h2>Daftar Sesi Presensi</h2>
+
+<table border="1" cellpadding="5">
+<tr>
+    <th>Tanggal</th>
+    <th>Mapel</th>
+    <th>Kelas</th>
+    <th>Aksi</th>
+</tr>
+
+{% for p in presensi %}
+<tr>
+    <td>{{ p[1] }}</td>
+    <td>{{ p[2] }}</td>
+    <td>{{ p[3] }}</td>
+    <td>
+        <a href="{{ url_for('isi_presensi_manual', presensi_id=p[0]) }}">
+    Isi Presensi
+</a>
+
+    </td>
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>
