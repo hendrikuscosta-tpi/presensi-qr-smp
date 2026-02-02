@@ -157,20 +157,26 @@ def isi_presensi_manual(presensi_id):
 
     # SIMPAN PRESENSI MANUAL
     if request.method == 'POST':
-        for s in siswa:
-            siswa_id = s[0]
-            status = request.form.get(f'status_{siswa_id}')
+    cur.execute(
+        "DELETE FROM detail_presensi WHERE presensi_id = ?",
+        (presensi_id,)
+    )
 
-            if status:
-                cur.execute("""
-                    INSERT INTO detail_presensi
-                    (presensi_id, siswa_id, status, metode, waktu)
-                    VALUES (?, ?, ?, 'manual', datetime('now'))
-                """, (presensi_id, siswa_id, status))
+    for s in siswa:
+        siswa_id = s[0]
+        status = request.form.get(f'status_{siswa_id}')
 
-        conn.commit()
-        conn.close()
-        return redirect(url_for('presensi'))
+        if status:
+            cur.execute("""
+                INSERT INTO detail_presensi
+                (presensi_id, siswa_id, status, metode, waktu)
+                VALUES (?, ?, ?, 'manual', datetime('now'))
+            """, (presensi_id, siswa_id, status))
+
+    conn.commit()
+    conn.close()
+    return redirect(url_for('presensi'))
+
 
     conn.close()
     return render_template(
