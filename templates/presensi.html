@@ -19,12 +19,13 @@
     </select><br><br>
 
     <label>Kelas:</label><br>
-    <select name="kelas" required>
-        <option>7A</option>
-        <option>7B</option>
-        <option>9A</option>
-        <option>9B</option>
-    </select><br><br>
+    <select name="kelas_id" required>
+    {% for k in daftar_kelas %}
+    <option value="{{ k.id }}">
+        {{ k.nama_kelas }} ({{ k.tahun_ajaran }})
+    </option>
+    {% endfor %}
+</select><br><br>
 
     <button type="submit">Mulai Presensi</button>
 </form>

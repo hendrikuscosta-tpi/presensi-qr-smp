@@ -1,0 +1,45 @@
+CREATE TABLE kelas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama TEXT NOT NULL,
+    tahun_ajaran_id INTEGER NOT NULL,
+    FOREIGN KEY (tahun_ajaran_id) REFERENCES tahun_ajaran(id)
+);
+
+PRAGMA table_info(kelas);
+SELECT * FROM kelas;
+
+CREATE TABLE presensi_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT,
+    mapel TEXT,
+    kelas_id INTEGER
+);
+
+INSERT INTO presensi_new (id, tanggal, mapel, kelas_id)
+SELECT id, tanggal, mapel, kelas_id FROM presensi;
+
+DROP TABLE kelas;
+
+ALTER TABLE presensi_new RENAME TO presensi;
+
+CREATE TABLE kelas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama_kelas TEXT NOT NULL,
+    tahun_ajaran_id INTEGER NOT NULL
+);
+
+CREATE TABLE presensi (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tanggal TEXT,
+    mapel TEXT,
+    kelas_id INTEGER
+);
+
+SELECT * FROM tahun_ajaran WHERE aktif = 1;
+
+INSERT INTO kelas (nama_kelas, tahun_ajaran_id)
+VALUES ('7A', 1);
+
+SELECT k.id, k.nama_kelas, ta.nama
+FROM kelas k
+JOIN tahun_ajaran ta ON k.tahun_ajaran_id = ta.id;

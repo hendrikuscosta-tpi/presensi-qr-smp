@@ -103,25 +103,33 @@ def presensi():
     if request.method == 'POST':
         tanggal = request.form['tanggal']
         mapel = request.form['mapel']
-        kelas = request.form['kelas']
+        kelas_id = request.form['kelas_id']
 
         cur.execute(
-            "INSERT INTO presensi (tanggal, mapel, kelas) VALUES (?, ?, ?)",
-            (tanggal, mapel, kelas)
+            "INSERT INTO presensi (tanggal, mapel, kelas_id) VALUES (?, ?, ?)",
+            (tanggal, mapel, kelas_id)
         )
         conn.commit()
-        conn.close()
         return redirect(url_for('presensi'))
 
     cur.execute("""
-        SELECT id, tanggal, mapel, kelas
+        SELECT presensi.id, presensi.tanggal, presensi.mapel,
+               kelas.nama_kelas, kelas.tahun_ajaran
         FROM presensi
-        ORDER BY tanggal DESC
+        JOIN kelas ON presensi.kelas_id = kelas.id
+        ORDER BY presensi.tanggal DESC
     """)
     data = cur.fetchall()
-    conn.close()
 
-    return render_template('presensi.html', presensi=data)
+    cur.execute("SELECT * FROM kelas")
+    daftar_kelas = cur.fetchall()
+
+    conn.close()
+    return render_template(
+        'presensi.html',
+        presensi=data,
+        daftar_kelas=daftar_kelas
+    )
 
 
 # ------------------------
@@ -132,47 +140,45 @@ def isi_presensi_manual(presensi_id):
     conn = get_db()
     cur = conn.cursor()
 
-    # Ambil data sesi presensi
     cur.execute("""
-        SELECT kelas, tanggal, mapel
+        SELECT presensi.tanggal, presensi.mapel, kelas.nama_kelas, kelas.id
         FROM presensi
-        WHERE id = ?
+        JOIN kelas ON presensi.kelas_id = kelas.id
+        WHERE presensi.id = ?
     """, (presensi_id,))
     presensi = cur.fetchone()
 
     if not presensi:
-        conn.close()
         return "Presensi tidak ditemukan"
 
-    kelas, tanggal, mapel = presensi
-
-    # Ambil siswa sesuai kelas
     cur.execute("""
-        SELECT id, nama
+        SELECT siswa.id, siswa.nama
         FROM siswa
-        WHERE kelas = ?
-        ORDER BY nama
-    """, (kelas,))
+        JOIN kelas_siswa ON siswa.id = kelas_siswa.siswa_id
+        WHERE kelas_siswa.kelas_id = ?
+        ORDER BY siswa.nama
+    """, (presensi['id'],))
     siswa = cur.fetchall()
 
-    # =====================
-    # SIMPAN (POST)
-    # =====================
     if request.method == 'POST':
         for s in siswa:
-            siswa_id = s[0]
-            status = request.form.get(f'status_{siswa_id}')
-
+            status = request.form.get(f"status_{s['id']}")
             if status:
                 cur.execute("""
                     INSERT INTO detail_presensi
                     (presensi_id, siswa_id, status, metode, waktu)
                     VALUES (?, ?, ?, 'manual', datetime('now'))
-                """, (presensi_id, siswa_id, status))
+                """, (presensi_id, s['id'], status))
 
         conn.commit()
-        conn.close()
-        return redirect(url_for('presensi'))  # ← HANYA DI POST
+        return redirect(url_for('presensi'))
+
+    conn.close()
+    return render_template(
+        'isi_presensi.html',
+        siswa=siswa,
+        presensi=presensi
+    )
 
     # =====================
     # TAMPILKAN FORM (GET)
