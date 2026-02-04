@@ -1,0 +1,118 @@
+📘 PEGANGAN GITHUB – PROJECT FLASK PRESENSI QR SMP
+A. CEK AWAL (PASTIKAN GIT SIAP)
+1️⃣ Cek Git terinstall
+git --version
+Jika muncul versi → OK
+Jika tidak → install Git dulu.
+________________________________________
+2️⃣ Cek status repository
+git status
+________________________________________
+B. MEMBUAT REPOSITORY LOKAL
+3️⃣ Masuk ke folder project
+cd C:\Django\presensi_qr_smp
+________________________________________
+4️⃣ Inisialisasi Git
+git init
+Tanda berhasil:
+Initialized empty Git repository
+________________________________________
+5️⃣ Cek apakah sudah jadi repo Git
+git status
+Jika ada tulisan:
+On branch master / main
+→ berarti git init berhasil
+________________________________________
+C. KONFIGURASI IDENTITAS (WAJIB SEKALI SAJA)
+6️⃣ Set nama dan email GitHub
+git config --global user.name "Nama Anda"
+git config --global user.email "emailgithub@gmail.com"
+Cek:
+git config --global --list
+________________________________________
+D. FILE YANG TIDAK BOLEH TERUPLOAD
+7️⃣ Buat .gitignore
+Isi minimal:
+venv/
+__pycache__/
+*.db
+.env
+________________________________________
+E. COMMIT (MENYIMPAN PERUBAHAN)
+8️⃣ Tambahkan semua file
+git add .
+________________________________________
+9️⃣ Commit pertama
+git commit -m "Initial commit - Sistem Presensi QR SMP (Flask)"
+________________________________________
+F. HUBUNGKAN KE GITHUB (REMOTE)
+🔟 Tambahkan remote repository
+git remote add origin https://github.com/USERNAME/presensi-qr-smp.git
+Cek:
+git remote -v
+________________________________________
+G. PUSH KE GITHUB (UPLOAD)
+1️⃣1️⃣ Push pertama
+git branch -M main
+git push -u origin main
+Jika muncul:
+branch 'main' set up to track 'origin/main'
+→ BERHASIL
+________________________________________
+H. ALUR KERJA SEHARI-HARI (INI YANG PALING PENTING)
+📌 SETIAP KALI MAU NGODING
+git pull
+________________________________________
+📌 SETELAH EDIT KODE
+git status
+git add .
+git commit -m "Update fitur presensi manual"
+git push
+________________________________________
+I. CEK RIWAYAT & KONDISI
+1️⃣2️⃣ Lihat history commit
+git log --oneline
+________________________________________
+1️⃣3️⃣ Cek perbedaan file
+git diff
+________________________________________
+J. JIKA TERJADI KESALAHAN
+❌ Batalkan perubahan file (belum di-commit)
+git restore app.py
+________________________________________
+❌ Batalkan semua perubahan (belum di-commit)
+git restore .
+________________________________________
+❌ Kembali ke commit sebelumnya (AMAN)
+git checkout HASH_COMMIT
+Kembali ke main:
+git checkout main
+________________________________________
+K. PINDAH LAPTOP / LANJUT DIRUMAH
+1️⃣4️⃣ Clone project
+git clone https://github.com/USERNAME/presensi-qr-smp.git
+Masuk folder:
+cd presensi-qr-smp
+Aktifkan venv:
+python -m venv venv
+venv\Scripts\activate
+pip install flask qrcode
+python app.py
+________________________________________
+L. POLA COMMIT YANG DISARANKAN (PENTING)
+✔️ Commit SETIAP FITUR JADI, bukan setiap edit kecil
+Contoh pesan commit yang baik:
+Add presensi manual per sesi
+Fix redirect isi presensi
+Add generate QR siswa
+Add import siswa via SQL
+________________________________________
+M. ATURAN EMAS (WAJIB DIINGAT)
+❌ Jangan commit:
+•	venv/
+•	database.db
+•	file pribadi
+✔️ Selalu:
+•	git pull sebelum kerja
+•	git push setelah fitur stabil
+

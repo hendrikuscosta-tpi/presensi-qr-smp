@@ -2,7 +2,7 @@ import cv2
 from pyzbar import pyzbar
 
 # Buka webcam (0 = webcam utama)
-cap = cv2.VideoCapture(2, cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 
 
 if not cap.isOpened():

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
 import qrcode
 import os
@@ -6,162 +6,125 @@ from models.db import init_db
 
 app = Flask(__name__)
 
-# ------------------------
-# Database helper
-# ------------------------
+# ======================
+# DATABASE
+# ======================
 def get_db():
     conn = sqlite3.connect('database.db')
     conn.row_factory = sqlite3.Row
     return conn
 
-
-# ------------------------
+# ======================
 # HOME
-# ------------------------
+# ======================
 @app.route('/')
 def index():
     return render_template('index.html')
 
-
-# ------------------------
-# DATA SISWA
-# ------------------------
+# ======================
+# SISWA
+# ======================
 @app.route('/siswa', methods=['GET', 'POST'])
 def siswa():
     conn = get_db()
     cur = conn.cursor()
 
     if request.method == 'POST':
-        nama = request.form['nama']
-        kelas = request.form['kelas']
-
         cur.execute(
             "INSERT INTO siswa (nama, kelas) VALUES (?, ?)",
-            (nama, kelas)
+            (request.form['nama'], request.form['kelas'])
         )
         conn.commit()
-        conn.close()
         return redirect(url_for('siswa'))
 
-    cur.execute("SELECT * FROM siswa ORDER BY kelas, nama")
-    data_siswa = cur.fetchall()
+    cur.execute("""
+        SELECT siswa.id, siswa.nama, kelas.nama_kelas
+        FROM siswa
+        JOIN kelas_siswa ON siswa.id = kelas_siswa.siswa_id
+        JOIN kelas ON kelas_siswa.kelas_id = kelas.id
+        ORDER BY kelas.nama_kelas, siswa.nama
+    """)
+    data = cur.fetchall()
     conn.close()
 
-    return render_template('siswa.html', siswa=data_siswa)
+    return render_template('siswa.html', siswa=data)
 
-
-# ------------------------
-# GENERATE QR SISWA
-# ------------------------
+# ======================
+# GENERATE QR
+# ======================
 @app.route('/generate_qr/<int:siswa_id>')
 def generate_qr(siswa_id):
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT id, nama, kelas FROM siswa WHERE id = ?",
-        (siswa_id,)
-    )
-    siswa = cur.fetchone()
+    cur.execute("SELECT nama FROM siswa WHERE id = ?", (siswa_id,))
+    s = cur.fetchone()
 
-    if not siswa:
-        conn.close()
+    if not s:
         return "Siswa tidak ditemukan"
 
-    kode_qr = f"SMP-{siswa[2]}-{siswa[0]}"
-
-    cur.execute(
-        "UPDATE siswa SET qr_code = ? WHERE id = ?",
-        (kode_qr, siswa_id)
-    )
+    kode_qr = str(siswa_id)
+    cur.execute("UPDATE siswa SET qr_code = ? WHERE id = ?", (kode_qr, siswa_id))
     conn.commit()
     conn.close()
 
-    qr_folder = os.path.join('static', 'qrcode')
-    if not os.path.exists(qr_folder):
-        os.makedirs(qr_folder)
+    folder = os.path.join('static', 'qrcode')
+    os.makedirs(folder, exist_ok=True)
 
     img = qrcode.make(kode_qr)
-    nama_file = f"{safe_filename(siswa[1])}_{siswa_id}.png"
-    img.save(os.path.join(qr_folder, nama_file))
+    img.save(os.path.join(folder, f"{s['nama'].replace(' ','_')}_{siswa_id}.png"))
 
     return redirect(url_for('siswa'))
 
-
-def safe_filename(text):
-    return text.lower().replace(" ", "_")
-
-
-# ------------------------
-# SESI PRESENSI (BUAT & DAFTAR)
-# ------------------------
-@app.route('/presensi', methods=['GET', 'POST'])
+# ======================
+# DAFTAR PRESENSI
+# ======================
+@app.route('/presensi')
 def presensi():
     conn = get_db()
     cur = conn.cursor()
 
-    if request.method == 'POST':
-        tanggal = request.form['tanggal']
-        mapel = request.form['mapel']
-        kelas_id = request.form['kelas_id']
-
-        cur.execute(
-            "INSERT INTO presensi (tanggal, mapel, kelas_id) VALUES (?, ?, ?)",
-            (tanggal, mapel, kelas_id)
-        )
-        conn.commit()
-        return redirect(url_for('presensi'))
-
     cur.execute("""
-        SELECT presensi.id, presensi.tanggal, presensi.mapel,
-               kelas.nama_kelas, kelas.tahun_ajaran
-        FROM presensi
-        JOIN kelas ON presensi.kelas_id = kelas.id
-        ORDER BY presensi.tanggal DESC
+        SELECT p.id, p.mapel, k.nama_kelas
+        FROM presensi p
+        JOIN kelas k ON p.kelas_id = k.id
     """)
     data = cur.fetchall()
-
-    cur.execute("SELECT * FROM kelas")
-    daftar_kelas = cur.fetchall()
-
     conn.close()
-    return render_template(
-        'presensi.html',
-        presensi=data,
-        daftar_kelas=daftar_kelas
-    )
 
+    return render_template('presensi.html', presensi=data)
 
-# ------------------------
-# ISI PRESENSI MANUAL
-# ------------------------
+# ======================
+# ISI PRESENSI (QR + MANUAL)
+# ======================
 @app.route('/presensi/<int:presensi_id>', methods=['GET', 'POST'])
-def isi_presensi_manual(presensi_id):
+def isi_presensi(presensi_id):
     conn = get_db()
     cur = conn.cursor()
 
+    # Ambil siswa + status presensi
     cur.execute("""
-        SELECT presensi.tanggal, presensi.mapel, kelas.nama_kelas, kelas.id
-        FROM presensi
-        JOIN kelas ON presensi.kelas_id = kelas.id
-        WHERE presensi.id = ?
-    """, (presensi_id,))
-    presensi = cur.fetchone()
+        SELECT s.id, s.nama,
+               dp.status,
+               dp.metode
+        FROM siswa s
+        JOIN kelas_siswa ks ON ks.siswa_id = s.id
+        JOIN presensi p ON p.kelas_id = ks.kelas_id
+        LEFT JOIN detail_presensi dp
+            ON dp.siswa_id = s.id
+           AND dp.presensi_id = ?
+        WHERE p.id = ?
+        ORDER BY s.nama
+    """, (presensi_id, presensi_id))
 
-    if not presensi:
-        return "Presensi tidak ditemukan"
-
-    cur.execute("""
-        SELECT siswa.id, siswa.nama
-        FROM siswa
-        JOIN kelas_siswa ON siswa.id = kelas_siswa.siswa_id
-        WHERE kelas_siswa.kelas_id = ?
-        ORDER BY siswa.nama
-    """, (presensi['id'],))
     siswa = cur.fetchall()
 
+    # SIMPAN PRESENSI MANUAL (HANYA YANG BELUM QR)
     if request.method == 'POST':
         for s in siswa:
+            if s['metode'] == 'qr':
+                continue
+
             status = request.form.get(f"status_{s['id']}")
             if status:
                 cur.execute("""
@@ -171,31 +134,46 @@ def isi_presensi_manual(presensi_id):
                 """, (presensi_id, s['id'], status))
 
         conn.commit()
-        return redirect(url_for('presensi'))
+        return redirect(url_for('isi_presensi', presensi_id=presensi_id))
 
     conn.close()
     return render_template(
         'isi_presensi.html',
         siswa=siswa,
-        presensi=presensi
+        presensi_id=presensi_id
     )
 
-    # =====================
-    # TAMPILKAN FORM (GET)
-    # =====================
+# ======================
+# SCAN QR (API)
+# ======================
+@app.route('/scan_qr', methods=['POST'])
+def scan_qr():
+    data = request.get_json()
+    qr_data = data.get('qr_data')
+    presensi_id = data.get('presensi_id')
+
+    conn = connect_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO detail_presensi (presensi_id, siswa_id, status)
+        VALUES (%s, %s, 'Hadir')
+        ON CONFLICT DO NOTHING
+    """, (presensi_id, qr_data))
+
+    conn.commit()
+    cur.close()
     conn.close()
-    return render_template(
-        'isi_presensi.html',
-        siswa=siswa,
-        presensi_id=presensi_id,
-        tanggal=tanggal,
-        mapel=mapel,
-        kelas=kelas
-    )
 
-# ------------------------
-# RUN APP (HARUS PALING BAWAH)
-# ------------------------
+    return jsonify({
+        'status': 'success',
+        'message': 'Presensi berhasil'
+    })
+
+# ======================
+# RUN
+# ======================
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
+ 

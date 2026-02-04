@@ -1,32 +1,95 @@
-<h2>Isi Presensi</h2>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Isi Presensi</title>
 
-<p>
-Tanggal: {{ tanggal }} <br>
-Mapel: {{ mapel }} <br>
-Kelas: {{ kelas }}
-</p>
+    <script src="{{ url_for('static', filename='js/jsQR.js') }}"></script>
 
+    <style>
+        video {
+            width: 100%;
+            max-width: 400px;
+            border: 3px solid #333;
+        }
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Scan QR Presensi</h2>
+
+<video id="video" autoplay></video>
+<canvas id="canvas" hidden></canvas>
+
+<div id="status">Menunggu kamera...</div>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d", { willReadFrequently: true });
+const statusText = document.getElementById("status");
+
+let scanning = true;
+
+// AKTIFKAN KAMERA
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+.then(stream => {
+    video.srcObject = stream;
+    statusText.innerText = "📷 Kamera aktif";
+    requestAnimationFrame(scanQR);
+})
+.catch(err => {
+    statusText.innerText = "❌ Kamera gagal: " + err;
+});
+
+// LOOP SCAN
+function scanQR() {
+    if (!scanning) return;
+
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        const qr = jsQR(imageData.data, canvas.width, canvas.height);
+
+        if (qr) {
+            scanning = false;
+            statusText.innerText = "📌 QR TERBACA: " + qr.data;
+
+            fetch("/scan_qr", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    qr_data: qr.data,
+                    presensi_id: {{ presensi_id }}
+                })
+            })
+            .then(res => res.json())
+            .then(r => {
+                statusText.innerText = "✅ " + r.message;
+                setTimeout(() => location.reload(), 2000);
+            });
+        }
+    }
+
+    requestAnimationFrame(scanQR);
+}
+</script>
+
+<hr>
+
+<h3>Presensi Manual (Jika QR bermasalah)</h3>
 <form method="post">
-<table border="1" cellpadding="5">
-    <tr>
-        <th>Nama Siswa</th>
-        <th>Hadir</th>
-        <th>Izin</th>
-        <th>Sakit</th>
-        <th>Alpa</th>
-    </tr>
-
-    {% for s in siswa %}
-    <tr>
-        <td>{{ s[1] }}</td>
-        <td><input type="radio" name="status_{{ s[0] }}" value="Hadir" required></td>
-        <td><input type="radio" name="status_{{ s[0] }}" value="Izin"></td>
-        <td><input type="radio" name="status_{{ s[0] }}" value="Sakit"></td>
-        <td><input type="radio" name="status_{{ s[0] }}" value="Alpa"></td>
-    </tr>
-    {% endfor %}
-</table>
-
-<br>
-<button type="submit">Simpan Presensi</button>
+    <input type="text" name="siswa_id" placeholder="ID Siswa">
+    <button type="submit">Simpan Manual</button>
 </form>
+
+</body>
+</html>
